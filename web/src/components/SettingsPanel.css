@@ -80,3 +80,46 @@
   gap: 8px;
   cursor: pointer;
 }
+
+@media (max-width: 640px) {
+  .settings-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    max-height: 80dvh;
+    overflow-y: auto;
+    border-left: none;
+    border-right: none;
+    border-top: 1px solid #333;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  .settings-header {
+    padding: 14px 16px;
+  }
+
+  .close-btn {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 24px;
+  }
+
+  .setting-group label {
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 0;
+  }
+
+  .setting-group input[type="range"] {
+    min-height: 44px;
+  }
+
+  .checkbox-label {
+    min-height: 44px;
+  }
+}

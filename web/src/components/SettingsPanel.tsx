@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import './SettingsPanel.css';
 
 export type AppSettings = {
@@ -12,13 +13,22 @@ interface SettingsPanelProps {
 }
 
 export function SettingsPanel({ isOpen, onClose, settings, onSettingsChange }: SettingsPanelProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
     <div className="settings-panel">
       <div className="settings-header">
         <h3>Settings</h3>
-        <button className="close-btn" onClick={onClose}>×</button>
+        <button type="button" className="close-btn" onClick={onClose} aria-label="關閉設定">×</button>
       </div>
       <div className="settings-body">
         <div className="setting-group">
