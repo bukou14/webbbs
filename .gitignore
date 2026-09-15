@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+coverage/
+
+# logs
+*.log
+
+# captured screenshots / test artifacts
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+qa-native/
+
+# local SQLite cache and debug dumps
+data/
+
+# agent / tooling state
+.omo/
+.playwright-mcp/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
