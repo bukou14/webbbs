@@ -846,6 +846,22 @@
   margin-left: auto;
 }
 
+.bbs-keybar-scroll {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.bbs-keybar-fixed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
 .bbs-key-btn {
   display: inline-flex;
   align-items: center;
@@ -893,45 +909,6 @@
 .bbs-shell button:focus-visible {
   outline: 2px solid var(--bbs-accent-bright);
   outline-offset: 2px;
-}
-
-/* --------------------------------------------------------------- responsive */
-
-@media (max-width: 600px) {
-  .bbs-body {
-    padding: 14px 10px 20px;
-  }
-
-  .bbs-toolbar-main {
-    padding: 9px 10px;
-  }
-
-  .bbs-breadcrumbs {
-    padding: 6px 10px;
-  }
-
-  .bbs-keybar {
-    padding: 8px 10px;
-  }
-
-  .bbs-keybar-nav {
-    margin-left: 0;
-  }
-
-  .bbs-menu-item {
-    padding: 12px 14px;
-    font-size: 15px;
-  }
-
-  .bbs-notice-body,
-  .bbs-text-body {
-    padding: 12px;
-    font-size: 12px;
-  }
-
-  .bbs-article-body {
-    font-size: 13px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1150,4 +1127,515 @@
   border-color: var(--bbs-accent);
   background: var(--bbs-accent-soft);
   color: var(--bbs-accent-bright);
+}
+
+/* --------------------------------------------------------------- responsive */
+
+/*
+ * Touch devices: guarantee comfortable tap targets regardless of viewport
+ * width. Scoped to coarse pointers so desktop (fine pointer) is untouched.
+ */
+@media (hover: none) and (pointer: coarse) {
+  .bbs-nav-btn,
+  .bbs-key-btn,
+  .bbs-row-action,
+  .bbs-menu-item,
+  .bbs-primary-btn,
+  .bbs-toolbar-actions button,
+  .bbs-reply-field select,
+  .bbs-reply-field input {
+    min-height: 44px;
+  }
+
+  .bbs-reply-textarea {
+    min-height: 44px;
+  }
+
+  .bbs-nav-btn,
+  .bbs-key-btn,
+  .bbs-toolbar-actions button {
+    padding: 8px 14px;
+  }
+
+  .bbs-row-action {
+    padding: 8px 14px;
+  }
+}
+
+/* ------------------------------------------- phones (primary mobile layout) */
+@media (max-width: 640px) {
+  .bbs-body {
+    padding: 12px 10px calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* --- toolbar + breadcrumbs: wrap, never force horizontal scroll --- */
+  .bbs-toolbar-main {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .bbs-shell-title {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 13px;
+    text-overflow: ellipsis;
+  }
+
+  .bbs-status-text {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 11px;
+    text-overflow: ellipsis;
+  }
+
+  .bbs-toolbar-actions {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .bbs-toolbar-actions button {
+    flex: 1 1 0;
+    min-height: 44px;
+    padding: 8px 6px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .bbs-breadcrumbs {
+    gap: 5px;
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  .bbs-crumb {
+    overflow-wrap: anywhere;
+  }
+
+  /* --- table pages: rows become stacked cards (no horizontal scroll) --- */
+  .bbs-table-wrap {
+    overflow-x: visible;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .bbs-table--boards,
+  .bbs-table--posts {
+    min-width: 0;
+  }
+
+  /* --- board list: rows become labeled cards --- */
+  .bbs-table--boards {
+    display: block;
+    font-size: 13px;
+  }
+
+  .bbs-table--boards thead {
+    display: none;
+  }
+
+  .bbs-table--boards tbody,
+  .bbs-table--boards tr,
+  .bbs-table--boards td {
+    display: block;
+    width: auto;
+  }
+
+  .bbs-table--boards tbody tr.bbs-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+    padding: 12px 14px;
+    background-color: var(--bbs-surface);
+    border: 1px solid var(--bbs-border);
+    border-radius: var(--bbs-radius);
+  }
+
+  .bbs-table--boards tbody tr.bbs-row.bbs-row-selected {
+    background-color: var(--bbs-accent-soft);
+    border-color: var(--bbs-accent-line);
+    box-shadow: inset 4px 0 0 var(--bbs-accent);
+  }
+
+  .bbs-table--boards tbody td {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+    padding: 3px 0;
+    border-bottom: none;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .bbs-table--boards tbody td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    min-width: 68px;
+    color: var(--bbs-text-faint);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  .bbs-cell-desc,
+  .bbs-cell-title {
+    min-width: 0;
+  }
+
+  .bbs-table--boards tbody td.bbs-cell-action {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    margin-top: 2px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--bbs-border);
+  }
+
+  .bbs-table--boards tbody td.bbs-cell-action::before {
+    min-width: 0;
+  }
+
+  .bbs-table--boards tbody td.bbs-cell-action .bbs-row-action {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  .bbs-table--boards tbody td.bbs-empty {
+    display: block;
+    padding: 24px 12px;
+    text-align: center;
+    border-bottom: none;
+  }
+
+  .bbs-table--boards .bbs-empty::before {
+    display: none;
+  }
+
+  /* --- post list: keep a real 2-column table (編號 + 標題), no scroll --- */
+  .bbs-table--posts {
+    display: table;
+    table-layout: fixed;
+    font-size: 13px;
+  }
+
+  .bbs-table--posts .bbs-col-idx,
+  .bbs-table--posts .bbs-col-status,
+  .bbs-table--posts .bbs-col-date,
+  .bbs-table--posts .bbs-col-author,
+  .bbs-table--posts .bbs-col-action,
+  .bbs-table--posts .bbs-cell-idx,
+  .bbs-table--posts .bbs-cell-mark,
+  .bbs-table--posts .bbs-cell-date,
+  .bbs-table--posts .bbs-cell-author,
+  .bbs-table--posts .bbs-cell-action {
+    display: none;
+  }
+
+  .bbs-table--posts thead th {
+    padding: 10px 10px;
+  }
+
+  .bbs-table--posts .bbs-col-postno,
+  .bbs-table--posts .bbs-cell-postno {
+    width: 64px;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .bbs-table--posts .bbs-cell-title {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    overflow-wrap: normal;
+    text-overflow: ellipsis;
+  }
+
+  .bbs-table--posts tbody tr.bbs-row {
+    min-height: 44px;
+  }
+
+  .bbs-table--posts tbody td {
+    padding: 12px 10px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /* --- iOS: keep focusable fields at >=16px to avoid zoom-on-focus --- */
+  .bbs-input,
+  .bbs-search-input {
+    font-size: 16px;
+  }
+
+  /* --- shared headings --- */
+  .bbs-page-head {
+    margin-bottom: 12px;
+  }
+
+  .bbs-page-sub {
+    font-size: 12px;
+  }
+
+  /* --- main menu --- */
+  .bbs-menu-item {
+    gap: 12px;
+    min-height: 48px;
+    padding: 12px 14px;
+    font-size: 15px;
+  }
+
+  .bbs-menu-key {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  /* --- notice / text --- */
+  .bbs-notice-body,
+  .bbs-text-body {
+    padding: 12px;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  /* --- login --- */
+  .bbs-login-card {
+    gap: 14px;
+    padding: 18px;
+  }
+
+  .bbs-login-prompt {
+    font-size: 16px;
+  }
+
+  .bbs-primary-btn {
+    min-height: 44px;
+    font-size: 15px;
+  }
+
+  /* --- article --- */
+  .bbs-article {
+    padding-inline: 0;
+  }
+
+  .bbs-article-title {
+    font-size: 20px;
+  }
+
+  .bbs-article-thread {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .bbs-article-thread .bbs-nav-btn {
+    flex: 1 1 auto;
+    min-height: 44px;
+  }
+
+  .bbs-article-body {
+    font-size: 14px;
+    line-height: 1.75;
+    overflow-wrap: anywhere;
+  }
+
+  .bbs-article-quote {
+    padding-left: 10px;
+  }
+
+  .bbs-article-foot {
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .bbs-article-actions {
+    gap: 8px;
+  }
+
+  .bbs-article-actions .bbs-nav-btn,
+  .bbs-article-actions .bbs-key-btn {
+    min-height: 44px;
+  }
+
+  /* --- keybar: scroll the left region, pin PgUp/PgDn on the right --- */
+  .bbs-keybar {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    overflow-x: visible;
+    padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .bbs-keybar-scroll {
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 6px;
+  }
+
+  .bbs-keybar-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bbs-keybar-legend,
+  .bbs-keybar-nav {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .bbs-keybar-nav {
+    margin-left: 4px;
+  }
+
+  .bbs-keybar-fixed {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding-left: 8px;
+    border-left: 1px solid var(--bbs-border);
+  }
+
+  .bbs-key-btn,
+  .bbs-keybar .bbs-nav-btn {
+    flex-shrink: 0;
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+
+  /* --- overlays: thread reader / reply composer --- */
+  .bbs-thread-reader-head,
+  .bbs-reply-head {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .bbs-thread-reader-title,
+  .bbs-reply-title-text {
+    font-size: 17px;
+  }
+
+  .bbs-thread-reader-sub,
+  .bbs-reply-sub {
+    font-size: 12px;
+  }
+
+  .bbs-thread-reader-head .bbs-nav-btn,
+  .bbs-reply-head .bbs-nav-btn {
+    min-height: 44px;
+    margin-left: auto;
+    padding: 8px 16px;
+  }
+
+  .bbs-thread-reader-body {
+    min-height: 0;
+    gap: 16px;
+    padding: 14px 14px calc(28px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .bbs-thread-post {
+    padding: 14px 14px 18px;
+  }
+
+  .bbs-thread-post-title {
+    font-size: 15px;
+  }
+
+  .bbs-thread-post-body {
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+
+  .bbs-reply-body {
+    min-height: 0;
+    gap: 12px;
+    padding: 14px 14px 18px;
+  }
+
+  .bbs-reply-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .bbs-reply-field select,
+  .bbs-reply-field input {
+    width: 100%;
+    min-height: 44px;
+    padding: 9px 12px;
+    font-size: 16px;
+  }
+
+  .bbs-reply-title-field {
+    max-width: none;
+  }
+
+  .bbs-reply-content-field {
+    min-height: 0;
+  }
+
+  .bbs-reply-textarea {
+    min-height: 40vh;
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  .bbs-reply-foot {
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .bbs-reply-foot .bbs-nav-btn {
+    width: 100%;
+    min-height: 48px;
+  }
+}
+
+/* ------------------------------------------------------- small phones */
+@media (max-width: 400px) {
+  .bbs-body {
+    padding: 10px 8px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .bbs-page-title {
+    font-size: 18px;
+  }
+
+  .bbs-toolbar-actions button {
+    font-size: 10.5px;
+  }
+
+  .bbs-table--boards tbody td::before {
+    min-width: 58px;
+    font-size: 10px;
+  }
+
+  .bbs-article-title,
+  .bbs-notice-title {
+    font-size: 18px;
+  }
+
+  .bbs-notice-body,
+  .bbs-text-body {
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .bbs-menu-item {
+    font-size: 14px;
+  }
+
+  .bbs-login-card {
+    padding: 16px;
+  }
 }

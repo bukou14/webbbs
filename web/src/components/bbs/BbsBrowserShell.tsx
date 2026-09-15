@@ -17,6 +17,9 @@ const NAV_BUTTONS: { label: string; run: (actions: BbsActions) => void }[] = [
   { label: '←', run: (actions) => actions.left() },
   { label: '→', run: (actions) => actions.right() },
   { label: '↵', run: (actions) => actions.enter() },
+];
+
+const PAGE_BUTTONS: { label: string; run: (actions: BbsActions) => void }[] = [
   { label: 'PgUp', run: (actions) => actions.pageUp() },
   { label: 'PgDn', run: (actions) => actions.pageDown() },
 ];
@@ -209,28 +212,42 @@ export function BbsBrowserShell({
       </main>
 
       <footer className="bbs-keybar">
-        <div className="bbs-keybar-legend">
-          {legend.map((item, index) => {
-            const seq = legendKeyToSequence(item.key);
-            return (
+        <div className="bbs-keybar-scroll">
+          <div className="bbs-keybar-legend">
+            {legend.map((item, index) => {
+              const seq = legendKeyToSequence(item.key);
+              return (
+                <button
+                  key={`${item.key}-${index}`}
+                  type="button"
+                  className="bbs-key-btn"
+                  disabled={seq === null}
+                  aria-label={`${item.key} ${item.label}`}
+                  onClick={() => {
+                    if (seq !== null) actions.raw(seq);
+                  }}
+                >
+                  <span className="bbs-key-btn-key">{item.key}</span>
+                  {item.label && <span className="bbs-key-btn-label">{item.label}</span>}
+                </button>
+              );
+            })}
+          </div>
+          <div className="bbs-keybar-nav">
+            {NAV_BUTTONS.map((button) => (
               <button
-                key={`${item.key}-${index}`}
+                key={button.label}
                 type="button"
-                className="bbs-key-btn"
-                disabled={seq === null}
-                aria-label={`${item.key} ${item.label}`}
-                onClick={() => {
-                  if (seq !== null) actions.raw(seq);
-                }}
+                className="bbs-nav-btn"
+                onClick={() => button.run(actions)}
               >
-                <span className="bbs-key-btn-key">{item.key}</span>
-                {item.label && <span className="bbs-key-btn-label">{item.label}</span>}
+                {button.label}
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
-        <div className="bbs-keybar-nav">
-          {NAV_BUTTONS.map((button) => (
+        <div className="bbs-keybar-fixed">
+          {PAGE_BUTTONS.map((button) => (
             <button
               key={button.label}
               type="button"

@@ -49,12 +49,22 @@ export function BoardListPage({ page, actions }: BoardListPageProps) {
                 className={`bbs-row${index === page.selectedIndex ? ' bbs-row-selected' : ''}`}
                 onClick={() => actions.open(index)}
               >
-                <td className="bbs-cell-idx">{item.index}</td>
-                <td className="bbs-cell-name">{item.name}</td>
-                <td className="bbs-cell-status">{item.status}</td>
-                <td className="bbs-cell-desc">{item.description}</td>
-                <td className="bbs-cell-mod">{item.moderator}</td>
-                <td className="bbs-cell-action">
+                <td className="bbs-cell-idx" data-label="#">
+                  {item.index}
+                </td>
+                <td className="bbs-cell-name" data-label="看板">
+                  {item.name}
+                </td>
+                <td className="bbs-cell-status" data-label="狀態">
+                  {item.status}
+                </td>
+                <td className="bbs-cell-desc" data-label="說明">
+                  {item.description}
+                </td>
+                <td className="bbs-cell-mod" data-label="板主">
+                  {item.moderator}
+                </td>
+                <td className="bbs-cell-action" data-label="操作">
                   <button
                     type="button"
                     className="bbs-row-action"

@@ -49,11 +49,11 @@ export function PostListPage({ page, actions }: PostListPageProps) {
           <thead>
             <tr>
               <th className="bbs-col-idx">#</th>
-              <th>編號</th>
+              <th className="bbs-col-postno">編號</th>
               <th className="bbs-col-status">標記</th>
-              <th>日期</th>
-              <th>作者</th>
-              <th>標題</th>
+              <th className="bbs-col-date">日期</th>
+              <th className="bbs-col-author">作者</th>
+              <th className="bbs-col-title">標題</th>
               <th className="bbs-col-action" aria-label="操作" />
             </tr>
           </thead>
@@ -71,12 +71,24 @@ export function PostListPage({ page, actions }: PostListPageProps) {
                   className={`bbs-row${index === page.selectedIndex ? ' bbs-row-selected' : ''}`}
                   onClick={() => actions.open(index)}
                 >
-                  <td className="bbs-cell-idx">{index + 1}</td>
-                  <td className="bbs-cell-postno">{item.postno}</td>
-                  <td className="bbs-cell-mark">{item.mark}</td>
-                  <td className="bbs-cell-date">{item.date}</td>
-                  <td className="bbs-cell-author">{item.author}</td>
-                  <td className="bbs-cell-title">{item.title}</td>
+                  <td className="bbs-cell-idx">
+                    {index + 1}
+                  </td>
+                  <td className="bbs-cell-postno">
+                    {item.postno}
+                  </td>
+                  <td className="bbs-cell-mark">
+                    {item.mark}
+                  </td>
+                  <td className="bbs-cell-date">
+                    {item.date}
+                  </td>
+                  <td className="bbs-cell-author">
+                    {item.author}
+                  </td>
+                  <td className="bbs-cell-title">
+                    {item.title}
+                  </td>
                   <td className="bbs-cell-action">
                     <button
                       type="button"
