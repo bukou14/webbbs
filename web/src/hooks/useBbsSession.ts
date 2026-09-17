@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { createBig5Decoder, encodeText } from '../utils/encoding';
-import { parseScreen, type BbsPage, type RowColor } from '../utils/bbsScreen';
+import { parseScreen, findInputPrompt, type BbsPage, type RowColor } from '../utils/bbsScreen';
 import { KEY } from '../utils/bbsKeys';
 import type {
   BbsActions,
@@ -86,6 +86,7 @@ export function useBbsSession() {
   const autoLoginRef = useRef(false);
   const lastBoardRef = useRef<string | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const promptSubmitsRef = useRef(0);
 
   const [page, setPage] = useState<BbsPage | null>(null);
   const [rawText, setRawText] = useState('');
@@ -348,6 +349,14 @@ export function useBbsSession() {
     [readScreen],
   );
 
+  const acceptPromptDefaults = useCallback(async () => {
+    for (let i = 0; i < 8; i++) {
+      await sleep(700);
+      if (!findInputPrompt(readScreen().rows)) return;
+      send(KEY.enter);
+    }
+  }, [readScreen, send]);
+
   const submitLogin = useCallback(
     (field: 'username' | 'password', value: string) => {
       if (!value) return;
@@ -471,12 +480,24 @@ export function useBbsSession() {
     readThread,
     openComposer,
     submitLogin,
+    submitPrompt: (value: string) => {
+      send(value + KEY.enter);
+      // 標題 and 作者 are the two fields the user fills; once both are answered,
+      // accept every remaining option prompt with Enter until the search runs.
+      promptSubmitsRef.current += 1;
+      if (promptSubmitsRef.current >= 2) void acceptPromptDefaults();
+    },
     submitSearch(query: string) {
       enqueue([[query, 120], [KEY.enter, 80]]);
     },
     cancelSearch: () => send('\x1b'),
     raw: (sequence: string) => send(sequence),
-  }), [send, enqueue, moveTo, performOpen, readThread, openComposer, submitLogin]);
+  }), [send, enqueue, moveTo, performOpen, readThread, openComposer, submitLogin, acceptPromptDefaults]);
+
+  useEffect(() => {
+    const isPrompt = page?.kind === 'prompt' || (page?.kind === 'postList' && !!page.prompt);
+    if (!isPrompt) promptSubmitsRef.current = 0;
+  }, [page]);
 
   useEffect(() => {
     if (page?.kind === 'postList') lastBoardRef.current = page.board || null;

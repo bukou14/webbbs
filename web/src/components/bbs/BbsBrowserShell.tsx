@@ -3,6 +3,7 @@ import type { BbsPage, LegendItem } from '../../utils/bbsScreen';
 import type { BbsActions, BbsBrowserShellProps } from './types';
 import { legendKeyToSequence } from '../../utils/bbsKeys';
 import { LoginPage } from './LoginPage';
+import { PromptInput } from './PromptInput';
 import { NoticePage } from './NoticePage';
 import { MainMenuPage } from './MainMenuPage';
 import { BoardListPage } from './BoardListPage';
@@ -43,6 +44,14 @@ function renderPage(page: BbsPage, actions: BbsActions) {
   switch (page.kind) {
     case 'login':
       return <LoginPage page={page} actions={actions} />;
+    case 'prompt':
+      return (
+        <section className="bbs-login" aria-label="搜尋">
+          <div className="bbs-login-card">
+            <PromptInput prompt={page.prompt} onSubmit={(value) => actions.submitPrompt(value)} />
+          </div>
+        </section>
+      );
     case 'notice':
       return <NoticePage page={page} actions={actions} />;
     case 'menu':
@@ -76,6 +85,7 @@ export function BbsBrowserShell({
   onConnect,
   onDisconnect,
   onToggleRaw,
+  onOpenSettings,
 }: BbsBrowserShellProps) {
   const crumbs = useMemo(
     () => (breadcrumbs && breadcrumbs.length > 0 ? breadcrumbs : deriveBreadcrumbs(page)),
@@ -146,48 +156,45 @@ export function BbsBrowserShell({
 
   const canConnect = status === 'disconnected';
   const canDisconnect = status !== 'disconnected';
+  const connected = status === 'connected';
 
   return (
     <div className="bbs-shell" data-bbs-kind={page?.kind ?? 'none'}>
-      <header className="bbs-toolbar">
-        <div className="bbs-toolbar-main">
-          <span className={`status-indicator ${status}`} aria-hidden="true" />
-          <span className="bbs-shell-title">巴哈姆特 BBS</span>
-          <span className="bbs-status-text" role="status">
-            {statusText ?? STATUS_LABEL[status]}
-          </span>
-          <div className="bbs-toolbar-spacer" />
-          <div className="bbs-toolbar-actions">
-            <button
-              type="button"
-              className="bbs-toolbar-primary"
-              onClick={onConnect}
-              disabled={!canConnect}
-            >
-              Connect
-            </button>
-            <button type="button" onClick={onDisconnect} disabled={!canDisconnect}>
-              Disconnect
-            </button>
-            {onToggleRaw && (
-              <button type="button" onClick={onToggleRaw}>
-                Raw terminal
-              </button>
-            )}
-          </div>
-        </div>
-
-        {crumbs.length > 0 && (
-          <nav className="bbs-breadcrumbs" aria-label="Breadcrumb">
-            {crumbs.map((crumb, index) => (
-              <span key={`${crumb}-${index}`}>
-                {index > 0 && <span className="bbs-crumb-sep">›</span>}
-                <span className="bbs-crumb">{crumb}</span>
+      {(!connected || crumbs.length > 0) && (
+        <header className="bbs-toolbar">
+          {!connected && (
+            <div className="bbs-toolbar-main">
+              <span className={`status-indicator ${status}`} aria-hidden="true" />
+              <span className="bbs-shell-title">巴哈姆特 BBS</span>
+              <span className="bbs-status-text" role="status">
+                {statusText ?? STATUS_LABEL[status]}
               </span>
-            ))}
-          </nav>
-        )}
-      </header>
+              <div className="bbs-toolbar-spacer" />
+              <div className="bbs-toolbar-actions">
+                <button
+                  type="button"
+                  className="bbs-toolbar-primary"
+                  onClick={onConnect}
+                  disabled={!canConnect}
+                >
+                  Connect
+                </button>
+              </div>
+            </div>
+          )}
+
+          {crumbs.length > 0 && (
+            <nav className="bbs-breadcrumbs" aria-label="Breadcrumb">
+              {crumbs.map((crumb, index) => (
+                <span key={`${crumb}-${index}`}>
+                  {index > 0 && <span className="bbs-crumb-sep">›</span>}
+                  <span className="bbs-crumb">{crumb}</span>
+                </span>
+              ))}
+            </nav>
+          )}
+        </header>
+      )}
 
       {error && (
         <div className="bbs-error" role="alert">
@@ -245,8 +252,29 @@ export function BbsBrowserShell({
               </button>
             ))}
           </div>
+          {onOpenSettings && (
+            <button type="button" className="bbs-nav-btn" onClick={onOpenSettings}>
+              設定
+            </button>
+          )}
+          {onToggleRaw && (
+            <button type="button" className="bbs-nav-btn" onClick={onToggleRaw}>
+              Raw
+            </button>
+          )}
+          <button type="button" className="bbs-nav-btn" onClick={onDisconnect} disabled={!canDisconnect}>
+            斷線
+          </button>
         </div>
         <div className="bbs-keybar-fixed">
+          <button
+            type="button"
+            className="bbs-nav-btn"
+            aria-label="搜尋 (~)"
+            onClick={() => actions.raw('~')}
+          >
+            ~
+          </button>
           {PAGE_BUTTONS.map((button) => (
             <button
               key={button.label}

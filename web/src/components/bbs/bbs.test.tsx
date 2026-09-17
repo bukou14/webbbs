@@ -40,6 +40,7 @@ function makeActions(): BbsActions {
     readThread: vi.fn(),
     openComposer: vi.fn(),
     submitLogin: vi.fn(),
+    submitPrompt: vi.fn(),
     raw: vi.fn(),
   };
 }
@@ -92,7 +93,7 @@ describe('BbsBrowserShell render smoke test', () => {
 
     expect(screen.getByText('66229')).toBeTruthy();
     expect(screen.getByText('h81814')).toBeTruthy();
-    expect(screen.getAllByText('Chat').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Chat/).length).toBeGreaterThan(0);
   });
 
   it('renders the parsed article fixture', () => {

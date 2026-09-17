@@ -36,6 +36,8 @@ export interface BbsActions {
   openComposer(): void;
   /** Submit a login field value and remember it for auto-reconnect. */
   submitLogin(field: 'username' | 'password', value: string): void;
+  /** Send a typed value to the BBS prompt that is currently waiting for input. */
+  submitPrompt(value: string): void;
   /** Send a raw byte or escape sequence to the BBS. */
   raw(seq: string): void;
 }
@@ -85,4 +87,5 @@ export interface BbsBrowserShellProps {
   onConnect(): void;
   onDisconnect(): void;
   onToggleRaw?(): void;
+  onOpenSettings?(): void;
 }

@@ -77,9 +77,10 @@ export type BbsPage =
   | { kind: 'notice'; lines: string[]; title?: string }
   | { kind: 'menu'; header: BbsPageHeader; items: MenuItem[]; selectedIndex: number; footer: string[] }
   | { kind: 'boardList'; header: BbsPageHeader; items: BoardItem[]; selectedIndex: number; legend: LegendItem[]; prompt?: string }
-  | { kind: 'postList'; header: BbsPageHeader; board: string; items: PostItem[]; selectedIndex: number; legend: LegendItem[]; page: number }
+  | { kind: 'postList'; header: BbsPageHeader; board: string; items: PostItem[]; selectedIndex: number; legend: LegendItem[]; page: number; prompt?: string }
   | { kind: 'article'; header: BbsPageHeader; meta: ArticleMeta; body: string[]; legend: LegendItem[]; page: number }
   | { kind: 'text'; header: BbsPageHeader; lines: string[]; legend: LegendItem[] }
+  | { kind: 'prompt'; prompt: string }
   | { kind: 'unknown'; lines: string[] };
 
 const isBlank = (s: string) => s.trim().length === 0;
@@ -224,6 +225,19 @@ function firstMeaningful(lines: string[]): string {
   return lines.find((l) => l.trim()) || '';
 }
 
+/** A chrome line that is waiting for the user to type a value (e.g. 搜尋標題：, 請輸入關鍵字：, 限定有m標記的文章? [y/N]：). */
+export function findInputPrompt(lines: string[]): string | undefined {
+  for (const raw of lines) {
+    const t = raw.trim();
+    if (!t || t.length > 60) continue;
+    const prefixed = /^(請輸入|輸入|搜尋)/.test(t);
+    const searchish = /(請輸入|搜尋|關鍵字)/.test(t) && /[:：]\s*$/.test(t);
+    const choice = /[[(（]\s*[yYnNＹＮ]\s*[/／]\s*[yYnNＹＮ]\s*[\])）]/.test(t);
+    if (prefixed || searchish || choice) return t;
+  }
+  return undefined;
+}
+
 export function parseScreen(grid: ScreenGrid): BbsPage {
   const rows = grid.rows ?? [];
   const lines = rows.map((r) => (r ?? '').replace(/\s+$/, ''));
@@ -297,6 +311,7 @@ export function parseScreen(grid: ScreenGrid): BbsPage {
     const selectedIndex = pickSelected(rowsC, grid.colors);
     postItems.forEach((it, i) => (it.selected = i === selectedIndex));
     const pageM = all.match(/(\d+)\/(\d+)\s*頁/) || all.match(/第\s*(\d+)\s*頁/);
+    const prompt = findInputPrompt(lines);
     return {
       kind: 'postList',
       header,
@@ -305,8 +320,12 @@ export function parseScreen(grid: ScreenGrid): BbsPage {
       selectedIndex,
       legend,
       page: pageM ? Number(pageM[1]) : 1,
+      prompt,
     };
   }
+
+  const prompt = findInputPrompt(lines);
+  if (prompt) return { kind: 'prompt', prompt };
 
   // System notice / announcement screens.
   const titleLine = firstMeaningful(lines);

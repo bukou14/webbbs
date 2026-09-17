@@ -68,6 +68,23 @@ describe('bbsScreen parser (live fixtures)', () => {
     if (page.kind === 'boardList') expect(page.prompt).toContain('請輸入看板名稱');
   });
 
+  it('detects a search input prompt', () => {
+    const page = parseScreen({ rows: ['', '  搜尋標題：          ', ''] });
+    expect(page.kind).toBe('prompt');
+    if (page.kind === 'prompt') expect(page.prompt).toContain('搜尋標題');
+  });
+
+  it('detects a yes/no option prompt', () => {
+    const page = parseScreen({ rows: ['限定有m標記的文章? [y/N]：'] });
+    expect(page.kind).toBe('prompt');
+    if (page.kind === 'prompt') expect(page.prompt).toContain('[y/N]');
+  });
+
+  it('does not mistake the board list legend for an input prompt', () => {
+    const page = fixture('06-after-b');
+    expect(page.kind).toBe('boardList');
+  });
+
   it('parses the post list with postno/date/author/title and cursor', () => {
     const page = fixture('10-after-pagedown');
     expect(page.kind).toBe('postList');
