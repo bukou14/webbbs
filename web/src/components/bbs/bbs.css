@@ -387,6 +387,16 @@
   color: var(--bbs-text-faint);
 }
 
+.bbs-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bbs-postlist .bbs-prompt {
+  margin-bottom: 12px;
+}
+
 /* --------------------------------------------------------------- notice page */
 
 .bbs-notice {
@@ -1638,4 +1648,42 @@
   .bbs-login-card {
     padding: 16px;
   }
+}
+
+/* ---------------------------------------- post list: fit 20 rows, no scroll */
+
+/*
+ * The BBS article list is always 20 rows. Fill the available height and let the
+ * rows/font scale with it so all 20 fit without a vertical scrollbar — on phones
+ * (where 44px rows would overflow) as well as desktop. Rows are sized for 20
+ * regardless of the actual count, so the list stays stable across pages.
+ */
+.bbs-postlist {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.bbs-postlist .bbs-table-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  container-type: size;
+}
+
+.bbs-table--posts tbody tr.bbs-row {
+  min-height: 0;
+  height: 4.6cqh;
+}
+
+.bbs-table--posts tbody td {
+  padding: clamp(2px, 0.55cqh, 8px) 10px;
+  font-size: clamp(10px, 2.7cqh, 14px);
+  line-height: 1.25;
+}
+
+.bbs-table--posts thead th {
+  padding: clamp(2px, 0.55cqh, 8px) 10px;
+  font-size: clamp(9px, 2.3cqh, 12px);
 }

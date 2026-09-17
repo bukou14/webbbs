@@ -11,17 +11,8 @@ export interface BoardListPageProps {
 
 /** Board directory. Rows activate on click; the shell owns keyboard selection. */
 export function BoardListPage({ page, actions }: BoardListPageProps) {
-  const boardName = page.header.board ?? '尚未選定';
-
   return (
     <section className="bbs-boardlist" aria-label="看板列表">
-      <header className="bbs-page-head">
-        <h1 className="bbs-page-title">看板列表</h1>
-        <p className="bbs-page-sub">
-          看板《{boardName}》 · 共 {page.items.length} 個看板
-        </p>
-      </header>
-
       {page.prompt && (
         <div className="bbs-search-banner" role="status">
           {page.prompt}
