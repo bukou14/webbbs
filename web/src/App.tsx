@@ -41,11 +41,8 @@ export default function App() {
         onConnect={connect}
         onDisconnect={disconnect}
         onToggleRaw={() => setShowRaw((value) => !value)}
+        onOpenSettings={() => setShowSettings(true)}
       />
-
-      <button className="floating-settings" type="button" onClick={() => setShowSettings(true)}>
-        Settings
-      </button>
 
       {threadReader && <ThreadReader reader={threadReader} onClose={closeThreadReader} />}
 

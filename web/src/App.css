@@ -21,25 +21,6 @@
 .status-indicator.connecting,
 .status-indicator.reconnecting { background-color: #ffeb3b; }
 
-.floating-settings {
-  position: fixed;
-  right: calc(16px + env(safe-area-inset-right, 0px));
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-  z-index: 20;
-  background-color: #2a2a35;
-  color: #e5e5e5;
-  border: 1px solid #444;
-  border-radius: 999px;
-  padding: 8px 16px;
-  font-size: 12px;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
-}
-
-.floating-settings:hover {
-  background-color: #3a3a45;
-}
-
 .raw-overlay {
   position: absolute;
   inset: 48px 16px 72px;
@@ -84,21 +65,7 @@
   line-height: 1.35;
 }
 
-@media (hover: none) and (pointer: coarse) {
-  .floating-settings {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 12px 18px;
-  }
-}
-
 @media (max-width: 640px) {
-  .floating-settings {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 12px 18px;
-  }
-
   .raw-overlay {
     position: fixed;
     inset: 0;
