@@ -16,13 +16,13 @@ import cors from 'cors';
 import Database from 'better-sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { mkdirSync, writeFileSync } from 'fs';
+import { mkdirSync, writeFileSync, existsSync } from 'fs';
 import iconv from 'iconv-lite';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const PORT = parseInt(process.argv[2] || '8080', 10);
+const PORT = parseInt(process.env.PORT || process.argv[2] || '8080', 10);
 const BBS_URL = 'wss://term.gamer.com.tw/bbs';
 const BBS_ORIGIN = 'https://term.gamer.com.tw';
 const BBS_USER = process.env.BBS_USER || '';
@@ -607,6 +607,19 @@ app.get('/api/crawler/scrape', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// --- Static web client (production / Docker single-port mode) ---
+// In local dev the Vite dev server serves the app on :5173 and this directory
+// does not exist, so the proxy stays WebSocket/API-only.
+const webDist = join(__dirname, 'web', 'dist');
+if (existsSync(webDist)) {
+  app.use(express.static(webDist));
+  // SPA fallback: any non-API GET for a path that is not a real file returns index.html.
+  app.get(/^\/(?!api\/).*/, (req, res) => {
+    res.sendFile(join(webDist, 'index.html'));
+  });
+  console.log(`[proxy] Serving built web client from ${webDist}`);
+}
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`[proxy+api] Listening on ws://0.0.0.0:${PORT} and http://0.0.0.0:${PORT}`);
