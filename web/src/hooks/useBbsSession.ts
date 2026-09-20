@@ -24,6 +24,15 @@ type Step = [sequence: string | null, delayMs?: number];
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+// Production is served by the proxy on the same origin; vite dev runs on :5173 with the proxy on :8080.
+function resolveWsUrl(): string {
+  const override = import.meta.env.VITE_WS_URL as string | undefined;
+  if (override) return override;
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = import.meta.env.DEV ? `${window.location.hostname}:8080` : window.location.host;
+  return `${proto}//${host}`;
+}
+
 function hashPage(page: BbsPage): string {
   const json = JSON.stringify(page);
   let h = 0x811c9dc5;
@@ -216,7 +225,7 @@ export function useBbsSession() {
     const term = getTerm();
     term.reset();
 
-    const ws = new WebSocket(`ws://${window.location.hostname}:8080`);
+    const ws = new WebSocket(resolveWsUrl());
     ws.binaryType = 'arraybuffer';
 
     ws.onopen = () => setStatus('connected');
