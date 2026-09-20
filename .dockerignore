@@ -1,0 +1,33 @@
+# Dependencies (installed fresh inside the image)
+**/node_modules
+
+# Build output (rebuilt inside the image)
+web/dist
+dist
+coverage
+
+# Local database / crawler cache (mounted as a volume at runtime)
+data
+
+# Captured screenshots and QA artifacts
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+qa-native
+.playwright-mcp
+*.log
+debug_screen.log
+
+# Dev tooling / agent state
+.git
+.gitignore
+.omo
+.codegraph
+scraper
+
+# Editor / OS
+.vscode
+.idea
+.DS_Store

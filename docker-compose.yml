@@ -1,0 +1,32 @@
+services:
+  webbbs:
+    build: .
+    image: webbbs:latest
+    container_name: webbbs
+    ports:
+      - "${HOST_PORT:-8081}:8080"
+    environment:
+      PORT: "8080"
+      # Optional: only used by the (permanently blocked) BBS WebSocket crawler.
+      # The web client logs in through the proxy and never needs these.
+      BBS_USER: ${BBS_USER:-}
+      BBS_PASS: ${BBS_PASS:-}
+    volumes:
+      # Persists the SQLite cache across container rebuilds.
+      - webbbs-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/api/crawler/status').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  webbbs-data:
