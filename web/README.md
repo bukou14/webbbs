@@ -85,17 +85,7 @@ npm run lint       # oxlint
 ```
 
 Parser tests run against real captured BBS screens in
-`src/utils/__fixtures__/`. To re-capture live screens:
-
-```bash
-node scraper/capture-fixtures.mjs   # writes scraper/fixtures/*.txt|json
-```
-
-End-to-end live QA (drives the real BBS and screenshots each page):
-
-```bash
-node qa-native.mjs   # writes qa-native/*.png
-```
+`src/utils/__fixtures__/`.
 
 ## Tech Stack
 

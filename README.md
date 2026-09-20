@@ -48,7 +48,6 @@ browser: bytes ─▶ stateful Big5 decoder ─▶ hidden xterm (screen buffer)
 - **`web/`** — the React 19 + TypeScript + Vite frontend. It talks **only** to the
   WebSocket proxy, connecting to the page's own origin in production
   (overridable with `VITE_WS_URL`).
-- **`scraper/`** — dev-only tooling for capturing BBS screen fixtures.
 
 ## Quick start (Docker)
 
@@ -130,8 +129,6 @@ npm run lint       # oxlint
 ```
 
 Parser tests run against real captured screens in `web/src/utils/__fixtures__/`.
-Re-capture live screens with `node scraper/capture-fixtures.mjs`, and run end-to-end
-live QA (drives the real BBS, screenshots each page) with `node qa-native.mjs`.
 
 ## Project structure
 
@@ -141,8 +138,6 @@ live QA (drives the real BBS, screenshots each page) with `node qa-native.mjs`.
 ├── Dockerfile                # 3-stage: web build → native deps → slim runtime
 ├── docker-compose.yml        # one service (host 8081 → container 8080), named data volume
 ├── data/                     # local SQLite cache (git-ignored; volume in Docker)
-├── scraper/                  # dev-only BBS fixture capture tooling
-├── qa-native.mjs             # end-to-end live QA harness
 └── web/                      # React 19 + Vite + TypeScript client
     └── src/
         ├── utils/bbsScreen.ts   # pure screen parser → BbsPage union
