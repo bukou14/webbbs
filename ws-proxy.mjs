@@ -23,7 +23,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const PORT = parseInt(process.env.PORT || process.argv[2] || '8080', 10);
-const BBS_URL = 'wss://term.gamer.com.tw/bbs';
+const BBS_URL = process.env.BBS_URL || 'wss://term.gamer.com.tw/bbs';
 const BBS_ORIGIN = 'https://term.gamer.com.tw';
 const BBS_USER = process.env.BBS_USER || '';
 const BBS_PASS = process.env.BBS_PASS || '';
