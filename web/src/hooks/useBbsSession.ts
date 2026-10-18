@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { createBig5Decoder, encodeText } from '../utils/encoding';
-import { parseScreen, findInputPrompt, type BbsPage, type RowColor } from '../utils/bbsScreen';
+import { parseScreen, findInputPrompt, isPagerScreen, mergePagerPage, type BbsPage, type RowColor } from '../utils/bbsScreen';
 import { KEY } from '../utils/bbsKeys';
 import type {
   BbsActions,
@@ -17,7 +17,18 @@ const ROWS = 24;
 const QUIET_MS = 140;
 const MAX_WAIT_MS = 700;
 const STEP_MS = 70;
-const THREAD_STEP_MS = 1800;
+// Thread reading polls the screen instead of trusting a single fixed delay: the
+// BBS may take arbitrarily long to paint the next post, so a fixed checkpoint
+// would capture the previous/partial frame and end the thread early.
+const THREAD_POLL_MS = 250;
+// Give up waiting for a next post only after this long with no new article.
+const THREAD_WAIT_MS = 8000;
+// After "=" wait this long for the first post to arrive; if the BBS is already
+// showing it (no redraw) this is the fallback that lets collection start.
+const THREAD_FIRST_GRACE_MS = 2500;
+// A same-post frame counts as the thread end only once the BBS has responded
+// to our "+" at least this long ago.
+const THREAD_MIN_SETTLE_MS = 300;
 const THREAD_MAX = 120;
 
 type Step = [sequence: string | null, delayMs?: number];
@@ -56,6 +67,35 @@ function articleKey(page: Extract<BbsPage, { kind: 'article' }>): string {
   return `${page.meta.author}|${page.meta.title}|${body.length}|${body.slice(0, 40)}`;
 }
 
+type ArticleMeta = Extract<BbsPage, { kind: 'article' }>['meta'];
+
+const PAGER_FOOTER_RE = /瀏覽\s*P\.\d+\(\d+%\)/;
+const ARTICLE_CHROME_RE = /(文章選讀|\(g\)寫得好!|\(h\)求助|\(PgUp\)\(PgDn\)|相關主題|搜尋標題)/;
+const ARTICLE_HEADER_RE = /^(作者|標題|時間|看板)[:：]/;
+
+const trimRight = (s: string) => s.replace(/\s+$/, '');
+
+function pagerBodyLines(lines: string[]): string[] {
+  const out: string[] = [];
+  for (const line of lines) {
+    if (PAGER_FOOTER_RE.test(line) || ARTICLE_CHROME_RE.test(line)) break;
+    out.push(trimRight(line));
+  }
+  while (out.length && out[out.length - 1] === '') out.pop();
+  return out;
+}
+
+function pagerFingerprint(lines: string[]): string {
+  return lines
+    .map(trimRight)
+    .filter(
+      (l) =>
+        !PAGER_FOOTER_RE.test(l) && !ARTICLE_CHROME_RE.test(l) && !ARTICLE_HEADER_RE.test(l),
+    )
+    .join('\n')
+    .trim();
+}
+
 function deriveBreadcrumbs(page: BbsPage | null): string[] {
   if (!page) return [];
   switch (page.kind) {
@@ -78,6 +118,7 @@ export function useBbsSession() {
   const wsRef = useRef<WebSocket | null>(null);
   const decoderRef = useRef<((bytes: Uint8Array) => string) | null>(null);
   const pageRef = useRef<BbsPage | null>(null);
+  const linesRef = useRef<string[]>([]);
   const hashRef = useRef('');
   const dirtyRef = useRef(false);
   const quietTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -88,6 +129,15 @@ export function useBbsSession() {
     lastKey: string;
     count: number;
     timer: ReturnType<typeof setTimeout> | null;
+    pendingSince: number | null;
+    sawActivity: boolean;
+    phase: 'first' | 'next';
+    pager: {
+      step: 'reset' | 'collect';
+      parts: string[];
+      fingerprints: Set<string>;
+      meta: ArticleMeta | null;
+    } | null;
   } | null>(null);
   const captureStepRef = useRef<(() => void) | null>(null);
   const credsRef = useRef<{ username: string; password: string } | null>(null);
@@ -161,6 +211,7 @@ export function useBbsSession() {
   const publish = useCallback(() => {
     const { rows, colors } = readScreen();
     const next = parseScreen({ rows, colors });
+    linesRef.current = rows;
     setRawText(rows.join('\n'));
     const hash = hashPage(next);
     if (hash === hashRef.current) return;
@@ -178,6 +229,8 @@ export function useBbsSession() {
   }, [publish]);
 
   const markDirty = useCallback(() => {
+    const c = collectRef.current;
+    if (c?.active && c.pendingSince !== null) c.sawActivity = true;
     dirtyRef.current = true;
     if (quietTimer.current) clearTimeout(quietTimer.current);
     quietTimer.current = setTimeout(settle, QUIET_MS);
@@ -298,28 +351,178 @@ export function useBbsSession() {
     const c = collectRef.current;
     if (!c?.active) return;
     if (c.timer) { clearTimeout(c.timer); c.timer = null; }
-    const current = pageRef.current;
-    if (current?.kind !== 'article') {
-      finishThreadCollect();
-      return;
-    }
-    const key = articleKey(current);
-    if (key === c.lastKey || c.count >= THREAD_MAX) {
-      finishThreadCollect();
-      return;
-    }
-    c.lastKey = key;
-    c.count += 1;
-    const snapshot: ThreadArticle = {
-      title: current.meta.title,
-      author: current.meta.author,
-      board: current.meta.board,
-      date: current.meta.date,
-      body: current.body,
+
+    const waitMore = () => {
+      c.timer = setTimeout(() => captureStepRef.current?.(), THREAD_POLL_MS);
     };
-    setThreadReader((prev) => (prev ? { ...prev, articles: [...prev.articles, snapshot] } : prev));
-    send('+');
-    c.timer = setTimeout(() => captureStepRef.current?.(), THREAD_STEP_MS);
+
+    // Never judge from a half-painted screen: wait for the BBS to finish.
+    if (dirtyRef.current || quietTimer.current !== null) {
+      waitMore();
+      return;
+    }
+
+    const waited = c.pendingSince === null ? 0 : Date.now() - c.pendingSince;
+    const current = pageRef.current;
+    const rawLines = linesRef.current;
+
+    const pushArticle = (meta: ArticleMeta, body: string[]) => {
+      c.count += 1;
+      const snapshot: ThreadArticle = {
+        title: meta.title,
+        author: meta.author,
+        board: meta.board,
+        date: meta.date,
+        body,
+      };
+      setThreadReader((prev) => (prev ? { ...prev, articles: [...prev.articles, snapshot] } : prev));
+    };
+
+    const record = (article: Extract<BbsPage, { kind: 'article' }>) => {
+      c.lastKey = articleKey(article);
+      pushArticle(article.meta, article.body);
+    };
+
+    const advance = () => {
+      c.phase = 'next';
+      send('+');
+      c.pendingSince = Date.now();
+      c.sawActivity = false;
+      waitMore();
+    };
+
+    // Long articles open in the BBS pager (`瀏覽 P.n(xx%)`): the header scrolls
+    // off and `+` is not bound there, so reset to the top, page through the
+    // article, then resume the thread walk from the `文章選讀` footer.
+    if (c.pager) {
+      const p = c.pager;
+      const fp = pagerFingerprint(rawLines);
+      const atEnd = !isPagerScreen(rawLines);
+
+      if (p.step === 'reset') {
+        // `0` scrolls the pager back to the article top (where the header is
+        // visible). If that repaint has not landed yet, wait instead of capturing
+        // a stale slice of the article.
+        if (current?.kind !== 'article' && !c.sawActivity && waited < THREAD_WAIT_MS) {
+          waitMore();
+          return;
+        }
+        if (current?.kind === 'article') {
+          p.meta = current.meta;
+          p.parts = [...current.body];
+        } else {
+          p.parts.push(...pagerBodyLines(rawLines));
+        }
+        p.fingerprints.add(fp);
+        p.step = 'collect';
+        send(KEY.pageDown);
+        c.pendingSince = Date.now();
+        c.sawActivity = false;
+        waitMore();
+        return;
+      }
+
+      const seen = p.fingerprints.has(fp);
+      const page = pagerBodyLines(rawLines);
+      if (!atEnd && !seen && p.parts.length < 2000) {
+        p.fingerprints.add(fp);
+        p.parts.push(...mergePagerPage(p.parts, page));
+        send(KEY.pageDown);
+        c.pendingSince = Date.now();
+        c.sawActivity = false;
+        waitMore();
+        return;
+      }
+
+      // Either the pager is done, or the next page has not repainted yet. Only
+      // conclude once the screen actually changed (settled) or we timed out, so a
+      // slow repaint is not mistaken for the end of the article.
+      if (!atEnd && !(c.sawActivity && waited >= THREAD_MIN_SETTLE_MS) && waited < THREAD_WAIT_MS) {
+        waitMore();
+        return;
+      }
+
+      if (!seen) {
+        p.parts.push(...mergePagerPage(p.parts, page));
+      }
+      let meta = p.meta;
+      let body = p.parts;
+      if (!meta && current?.kind === 'article') {
+        meta = current.meta;
+        body = current.body;
+      }
+      c.pager = null;
+      if (meta) {
+        pushArticle(meta, body);
+        c.lastKey = `${meta.author}|${meta.title}|${body.join('\n').length}`;
+        if (c.count >= THREAD_MAX) {
+          finishThreadCollect();
+          return;
+        }
+        advance();
+        return;
+      }
+    }
+
+    if (!c.pager && isPagerScreen(rawLines)) {
+      c.pager = { step: 'reset', parts: [], fingerprints: new Set(), meta: null };
+      send('0');
+      c.pendingSince = Date.now();
+      c.sawActivity = false;
+      waitMore();
+      return;
+    }
+
+    if (current?.kind === 'article') {
+      if (c.phase === 'first') {
+        // Wait for the "=" response before sending "+". Otherwise its (possibly
+        // identical) first-post frame can land after "+" and be mistaken for the
+        // end of the thread.
+        if (c.sawActivity || waited >= THREAD_FIRST_GRACE_MS) {
+          record(current);
+          if (c.count >= THREAD_MAX) {
+            finishThreadCollect();
+            return;
+          }
+          c.phase = 'next';
+          send('+');
+          c.pendingSince = Date.now();
+          c.sawActivity = false;
+        }
+        waitMore();
+        return;
+      }
+
+      if (articleKey(current) !== c.lastKey) {
+        record(current);
+        if (c.count >= THREAD_MAX) {
+          finishThreadCollect();
+          return;
+        }
+        send('+');
+        c.pendingSince = Date.now();
+        c.sawActivity = false;
+        waitMore();
+        return;
+      }
+
+      // Same post again after "+": the BBS answered and still shows this post,
+      // so it is the last one. Otherwise a slow next post is still on its way.
+      if ((c.sawActivity && waited >= THREAD_MIN_SETTLE_MS) || waited >= THREAD_WAIT_MS) {
+        finishThreadCollect();
+        return;
+      }
+      waitMore();
+      return;
+    }
+
+    // Not an article: either the next post has not arrived yet, or the BBS left
+    // the article view (end of thread). Wait for a response before concluding.
+    if (waited >= THREAD_WAIT_MS) {
+      finishThreadCollect();
+      return;
+    }
+    waitMore();
   }, [finishThreadCollect, send]);
   captureStepRef.current = captureStep;
 
@@ -335,7 +538,16 @@ export function useBbsSession() {
     if (current?.kind !== 'article') return;
     const existing = collectRef.current;
     if (existing?.timer) clearTimeout(existing.timer);
-    collectRef.current = { active: true, lastKey: '', count: 0, timer: null };
+    collectRef.current = {
+      active: true,
+      lastKey: '',
+      count: 0,
+      timer: null,
+      pendingSince: Date.now(),
+      sawActivity: false,
+      phase: 'first',
+      pager: null,
+    };
     setThreadReader({
       board: current.meta.board,
       title: current.meta.title,
@@ -343,7 +555,7 @@ export function useBbsSession() {
       status: 'collecting',
     });
     send('=');
-    collectRef.current.timer = setTimeout(() => captureStepRef.current?.(), THREAD_STEP_MS);
+    collectRef.current.timer = setTimeout(() => captureStepRef.current?.(), THREAD_POLL_MS);
   }, [send]);
 
   const waitForScreen = useCallback(

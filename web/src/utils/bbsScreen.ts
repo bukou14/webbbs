@@ -214,11 +214,45 @@ export function parseArticle(lines: string[]): { meta: ArticleMeta; body: string
     date: lines[timeIdx].replace(/^時間[:：]\s*/, '').trim(),
   };
 
-  const end = lines.findIndex((l, i) => i > timeIdx && /(文章選讀|瀏覽\s*第|\s\(g\)[^\n]*離開閱讀)/.test(l));
+  const end = lines.findIndex(
+    (l, i) => i > timeIdx && /(文章選讀|瀏覽\s*(?:第|P\.)|\s\(g\)[^\n]*離開閱讀)/.test(l),
+  );
   const body = lines.slice(timeIdx + 1, end >= 0 ? end : lines.length);
   while (body.length && isBlank(body[0])) body.shift();
   while (body.length && isBlank(body[body.length - 1])) body.pop();
   return { meta, body };
+}
+
+/**
+ * True when the article is shown in the BBS pager (`瀏覽 P.1(96%)` footer)
+ * rather than the normal `文章選讀` footer. The pager hides the header and uses
+ * `0`/`$`/`PgDn` instead of the thread keys.
+ */
+export function isPagerScreen(lines: string[]): boolean {
+  return lines.some((l) => /瀏覽\s*P\.\d+\(\d+%\)/.test(l));
+}
+
+/** Cap on how many repeated lines to strip between pager pages, so ordinary
+ * repeated lines inside one page are not mistaken for scroll overlap. */
+const PAGER_MAX_OVERLAP = 2;
+
+/**
+ * Append one pager page to the accumulated body, dropping the lines it repeats
+ * from the tail of the previous page (readers scroll with a small overlap).
+ */
+export function mergePagerPage(parts: string[], page: string[]): string[] {
+  const max = Math.min(PAGER_MAX_OVERLAP, parts.length, page.length);
+  for (let k = max; k >= 1; k--) {
+    let same = true;
+    for (let i = 0; i < k; i++) {
+      if (parts[parts.length - k + i] !== page[i]) {
+        same = false;
+        break;
+      }
+    }
+    if (same) return page.slice(k);
+  }
+  return page;
 }
 
 function firstMeaningful(lines: string[]): string {

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { parseScreen, type BbsPage } from './bbsScreen';
+import { parseScreen, isPagerScreen, mergePagerPage, type BbsPage } from './bbsScreen';
 
 function fixture(name: string): BbsPage {
   const path = fileURLToPath(new URL(`./__fixtures__/${name}.txt`, import.meta.url));
@@ -134,5 +134,57 @@ describe('bbsScreen parser (live fixtures)', () => {
   it('does not throw on the board splash screen', () => {
     const page = fixture('08-after-chat-enter');
     expect(['text', 'notice', 'unknown']).toContain(page.kind);
+  });
+
+  it('recognizes the pager footer and keeps it out of the article body', () => {
+    const rows = [
+      '作者: h81814 (路燈上的澳洲人) 看板: Chat',
+      '標題: Re: 職場 面試完不到半小時又有其他獵人頭打來',
+      '時間: Mon Sep 14 14:03:32 2026',
+      '',
+      '內文第一行',
+      '內文第二行',
+      '  瀏覽 P.1(96%)  (h)求助 (PgUp)(PgDn)(0)($)移動 (/n)搜尋 (C)暫存 ←(q)結束',
+    ];
+    expect(isPagerScreen(rows)).toBe(true);
+    const page = parseScreen({ rows });
+    expect(page.kind).toBe('article');
+    if (page.kind !== 'article') return;
+    const body = page.body.join('\n');
+    expect(body).toContain('內文第一行');
+    expect(body).not.toContain('瀏覽 P.1');
+    expect(body).not.toContain('(h)求助');
+  });
+
+  it('does not treat a headerless pager screen as an article', () => {
+    const rows = ['內文中段', '  瀏覽 P.1(49%)  (h)求助 (PgUp)(PgDn)(0)($)移動'];
+    expect(isPagerScreen(rows)).toBe(true);
+    expect(parseScreen({ rows }).kind).not.toBe('article');
+  });
+});
+
+describe('mergePagerPage', () => {
+  it('appends the whole page when there is no overlap', () => {
+    expect(mergePagerPage(['a', 'b'], ['c', 'd'])).toEqual(['c', 'd']);
+  });
+
+  it('drops a single line repeated from the end of the previous page', () => {
+    expect(mergePagerPage(['a', 'b'], ['b', 'c'])).toEqual(['c']);
+  });
+
+  it('drops two repeated lines', () => {
+    expect(mergePagerPage(['a', 'b'], ['a', 'b', 'c'])).toEqual(['c']);
+  });
+
+  it('appends nothing when the page is already the tail', () => {
+    expect(mergePagerPage(['a', 'b', 'c'], ['b', 'c'])).toEqual([]);
+  });
+
+  it('never strips more than the overlap cap of two', () => {
+    expect(mergePagerPage(['x', 'x'], ['x', 'x', 'x', 'y'])).toEqual(['x', 'y']);
+  });
+
+  it('handles an empty accumulator', () => {
+    expect(mergePagerPage([], ['a', 'b'])).toEqual(['a', 'b']);
   });
 });
