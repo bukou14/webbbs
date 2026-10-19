@@ -1,0 +1,58 @@
+/*
+ * The saved-posts view reuses the BBS chrome: bbs.css supplies the palette tokens,
+ * the 文章列表 table and the article-reader classes, so this view looks like the BBS
+ * screens. Only the pieces this view owns are declared here.
+ */
+
+.saved-posts {
+  position: relative;
+}
+
+/* Article reader overlay: the same layout as the live BBS 文章內容 page. */
+.saved-posts .saved-posts-reader {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  overflow-y: auto;
+  padding: 22px 18px 40px;
+}
+
+.saved-posts-thread-pos {
+  margin-left: auto;
+  color: var(--bbs-text-faint);
+  font-family: var(--bbs-mono);
+  font-size: 12px;
+}
+
+.saved-posts-empty {
+  padding: 48px 12px;
+  text-align: center;
+  color: var(--bbs-text-dim);
+}
+
+.saved-posts-empty-title {
+  margin-bottom: 8px;
+  color: var(--bbs-text);
+  font-size: 15px;
+}
+
+.saved-posts-hint {
+  font-size: 13px;
+}
+
+.saved-posts-hint code {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background-color: var(--bbs-surface-alt);
+  color: var(--bbs-accent);
+}
+
+@media (max-width: 640px) {
+  .saved-posts .saved-posts-reader {
+    padding: 16px 12px 32px;
+  }
+
+  .saved-posts-thread-pos {
+    margin-left: 0;
+  }
+}

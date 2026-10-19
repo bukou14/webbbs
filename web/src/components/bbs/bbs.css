@@ -619,6 +619,36 @@
   color: #04121a;
 }
 
+.bbs-col-thread,
+.bbs-cell-thread {
+  width: 1%;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.bbs-row-thread {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--bbs-accent-line);
+  border-radius: var(--bbs-radius-sm);
+  background: transparent;
+  color: var(--bbs-accent);
+  font-family: var(--bbs-mono);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--bbs-ease), color var(--bbs-ease);
+}
+
+.bbs-row-thread:hover {
+  background: var(--bbs-accent);
+  color: #04121a;
+}
+
 .bbs-empty {
   padding: 28px 12px;
   text-align: center;
@@ -1358,6 +1388,23 @@
     text-align: right;
     white-space: nowrap;
     overflow: hidden;
+  }
+
+  .bbs-table--posts .bbs-col-thread,
+  .bbs-table--posts .bbs-cell-thread {
+    width: 44px;
+    text-align: center;
+  }
+
+  .bbs-table--posts .bbs-cell-thread {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .bbs-table--posts .bbs-row-thread {
+    width: 30px;
+    height: 30px;
+    font-size: 17px;
   }
 
   .bbs-table--posts .bbs-cell-title {
