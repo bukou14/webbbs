@@ -9,6 +9,43 @@
   width: 100%;
 }
 
+.app-views {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  background-color: #0d0d22;
+  border-bottom: 1px solid #2a3352;
+}
+
+.app-view-tab {
+  padding: 5px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: #8b93ad;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.app-view-tab:hover {
+  color: #cfd6ea;
+}
+
+.app-view-tab.active {
+  border-color: #2a3352;
+  background-color: #131a2e;
+  color: #00cdcd;
+  font-weight: 600;
+}
+
+.app-view {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .status-indicator {
   width: 8px;
   height: 8px;
