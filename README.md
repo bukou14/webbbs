@@ -28,6 +28,11 @@ through a native composer that drives the BBS post wizard.
 - Keyboard navigation: arrows, Enter, PageUp/Down, Home/End, `q`.
 - **Auto-reconnect** (~3s) with re-login after an unexpected disconnect; a "Raw terminal"
   toggle shows the underlying 80×24 screen for debugging.
+- **存檔文章** tab: the posts the crawler saved into SQLite, laid out like the BBS
+  文章列表 (`#`, 編號, 標記, 日期, 作者, 標題), with the same 同主題 串接 reader
+  (首篇 / 上一篇 / 下一篇 / 串接閱讀全部) working from the cache instead of the live BBS.
+  The list is ordered by the article's parsed post date **descending**, with 編號 as a
+  tie-breaker, so opening the tab lands on the newest post.
 - Mobile-aware layout (viewport sizing, bottom-sheet settings, scrollable keybar).
 
 ## Architecture
@@ -80,8 +85,28 @@ docker run --rm -p 8081:8080 -v webbbs-data:/app/data webbbs
 | Environment variable | Default | Purpose |
 | --- | --- | --- |
 | `PORT` | `8080` | Container's HTTP + WebSocket listen port (not the published host port) |
-| `BBS_USER` | *(empty)* | Only used by the blocked WebSocket crawler — the web client logs in itself |
+| `BBS_USER` | *(empty)* | Account for the headless BBS crawler (`POST /api/crawler/crawl`); the web client logs in with its own form |
 | `BBS_PASS` | *(empty)* | Same as above |
+| `SCRAPE_INTERVAL_MS` | `60000` | Interval of the scheduled BBS crawl (ms) |
+| `SCRAPE_ON_BOOT` | *(set)* | Set to `0` to skip the crawl on startup |
+| `BBS_BOARD` | `Chat` | BBS board the crawler reads |
+| `BBS_SCRAPE_ROWS` | `6` | How many newest visible posts a manual crawl reads per run; scheduled crawls read the full current window |
+
+The crawler logs in **once** and keeps that BBS connection open, reusing it for every
+later run (scheduled or manual), so ticks do not re-login or re-kick a browser session.
+Scheduled runs happen every minute, starting at the newest selected post and moving
+backward. They sync every uncached row in each visible window, PageUp when needed, and
+stop after reaching a fully cached window. Cached article numbers whose BBS date matches
+the current row are skipped; reused numbers with a changed date are refreshed.
+Article reads continue with Right until the standard `文章選讀` footer appears, then
+return to the board before advancing to the next row.
+
+Each saved post also stores a `subject` — the title with the BBS reply prefix
+(`Re: `, `Re `, `=> `) stripped — which is what groups a post with the rest of its
+同主題 thread for the client's 串接 reader.
+
+Credentials (and any of the above) can be placed in a git-ignored `.env` next to
+`ws-proxy.mjs`; real environment values always take precedence.
 
 Only the **container** port (`8080`) is fixed; the published host port is free to change
 (the compose default is `8081`, overriding via `HOST_PORT=9090 docker compose up -d`).
@@ -112,12 +137,14 @@ Served by `ws-proxy.mjs` on the same port.
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/posts?page=&limit=` | Paginated cached posts (board `chat`) |
+| `GET` | `/api/posts?page=&limit=` | Paginated cached posts (board `chat`, newest post date first) |
 | `GET` | `/api/posts/:id` | Single cached post |
+| `GET` | `/api/posts/:id/thread` | Every saved post of the same 同主題 subject, oldest first |
 | `GET` | `/api/crawler/status` | Crawler status + cached post count |
 | `POST` | `/api/crawler/submit-posts` | Save posts decoded by the browser (`{ posts: [...] }`) |
-| `GET` | `/api/crawler/scrape` | HTTP scraper for `forum.gamer.com.tw` (bypasses the blocked WS crawler) |
-| `POST` | `/api/crawler/crawl` | **410 Gone** — BBS WebSocket crawl is permanently blocked |
+| `POST` | `/api/crawler/crawl` | Run the headless BBS crawler now on the shared session: reads board `Chat`, saves posts (`{ maxPosts?: number }`) |
+| `POST` | `/api/crawler/sync-all` | Start a manual full-board sync, navigating and saving posts as encountered |
+| `GET` | `/api/crawler/sync-all/status` | Progress for the manual full-board sync |
 
 ## Testing
 
@@ -154,7 +181,10 @@ Express · better-sqlite3 · ws.
 
 - **One session per account.** Bahamut forcibly disconnects an earlier login
   (another tab/device or reconnect). The app auto-answers the
-  `刪除其他重複的登入` prompt and reconnects.
+  `刪除其他重複的登入` prompt and reconnects. This also applies to the scheduled
+  BBS crawler: it holds one long-lived login with `BBS_USER`, so starting the crawler
+  drops an interactive session for the same account **once**, and that browser session
+  can in turn kick the crawler (each side then re-logs-in on its next action).
 - **Posting is public and irreversible.** The reply composer warns before the final
   確認張貼.
 - In production the client derives the proxy URL from the page origin (`wss://` when the

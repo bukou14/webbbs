@@ -17,6 +17,7 @@ supported (menu, board list, post list, article); posting/replying is out of sco
 | 文章列表 | table (`#`, 編號, 標記, 日期, 作者, 標題) with title/author filter and a 閱讀 button per row |
 | 文章內容 | article reader (title, 作者/看板/時間, quoted body). 同主題/串接: 首篇 / 上一篇 / 下一篇 (BBS `=` / `-` / `+`), **串接閱讀全部** walks the whole thread across pages into one scrollable page, and **✎ 回覆** opens a native reply composer |
 | 系統公告 / 進板畫面 | notice / text reading pane |
+| 存檔文章 (`SavedPostsPage`) | posts cached in SQLite, rendered with the same 文章列表 table and 同主題 串接 reader (`GET /api/posts`, `/api/posts/:id/thread`) |
 | 勇者代號 / 密碼 | login form (credentials are never persisted) |
 
 Each page exposes the function keys printed by the BBS on that screen as a bottom
